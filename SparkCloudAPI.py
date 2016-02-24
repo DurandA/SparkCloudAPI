@@ -23,18 +23,18 @@ THE SOFTWARE.
 # pip install requests
 import requests
 
-class SparkCore(object):
+class ParticleCore(object):
 	# init
 	def __init__(self, user, password, deviceID):
 		self.user = user
 		self.password = password
 		self.deviceID = deviceID
 
-	# get an access token for your Spark Core
+	# get an access token for your Particle Core
 	def getAccessToken(self):
 		# send post request and fetch output
 		postParameters = {'grant_type' : 'password', 'username' : self.user, 'password' : self.password}
-		r = requests.post('https://api.spark.io/oauth/token', auth = ('spark','spark'), data = postParameters)
+		r = requests.post('https://api.particle.io/oauth/token', auth = ('spark','spark'), data = postParameters)
 
 		# returns access token
 		return r.json()['access_token']
@@ -42,7 +42,7 @@ class SparkCore(object):
 	# get list of all access tokens
 	def getAllTokens(self):
 		# send get request and return output
-		r = requests.get ('https://api.spark.io/v1/access_tokens', auth = (self.user, self.password))
+		r = requests.get ('https://api.particle.io/v1/access_tokens', auth = (self.user, self.password))
 
 		# returns a list of all your tokens
 		return r.text
@@ -50,12 +50,12 @@ class SparkCore(object):
 	# delete an access token
 	def deleteToken(self, token):
 		# send delete request and return output
-		r = requests.delete ('https://api.spark.io/v1/access_tokens/'+token, auth = (self.user, self.password))
+		r = requests.delete ('https://api.particle.io/v1/access_tokens/'+token, auth = (self.user, self.password))
 
 		# returns the response, should be 'true'
 		return r.text
 
-	# start a function, must be defined in your setup() function with Spark.function()
+	# start a function, must be defined in your setup() function with Particle.function()
 	def sendFunctionRequest(self, functionName, functionParameter):
 		# get a new temporary access token
 		tempToken = self.getAccessToken()
@@ -64,7 +64,7 @@ class SparkCore(object):
 		postParameters = {'access_token' : tempToken, 'command' : functionParameter}
 
 		# send post request and return output
-		r = requests.post('https://api.spark.io/v1/devices/' + self.deviceID + '/' + functionName, data = postParameters)
+		r = requests.post('https://api.particle.io/v1/devices/' + self.deviceID + '/' + functionName, data = postParameters)
 
 		# delet temporary access token
 		self.deleteToken(tempToken)
@@ -72,12 +72,28 @@ class SparkCore(object):
 		# returns an int
 		return r.text
 
-	# read value of a variable, must be defined in your setup() function with Spark.variable()
+	# send an event to start a function on the photon, must be defined in setup() function
+	def sendEventRequest(self, eventName, eventParameter):
+		# get a new temporary access token
+		tempToken = self.getAccessToken()
+		
+		# define postParameters
+		postParameters = {"access_token" : tempToken, "name" : self.deviceID+"/"+eventName, "data": eventParameter , "private" : "false" , "ttl": "60"}
+		
+		# send post request and return output
+		r = requests.post('https://api.particle.io/v1/devices/events', data=payload, headers = {'content-Type': 'application/x-www-form-urlencoded'})
+	
+		# delete temporary access token
+		self.deleteToken(tempToken)
+	
+		return r.json()
+
+	# read value of a variable, must be defined in your setup() function with Particle.variable()
 	def readVariable(self, variableName):
 		# get a new temporary access token
 		tempToken = self.getAccessToken()
 
-		r = requests.get('https://api.spark.io/v1/devices/' + self.deviceID + '/' + variableName + '?' + 'access_token=' + tempToken)
+		r = requests.get('https://api.particle.io/v1/devices/' + self.deviceID + '/' + variableName + '?' + 'access_token=' + tempToken)
 		
 		# delete temporary access token
 		self.deleteToken(tempToken)
